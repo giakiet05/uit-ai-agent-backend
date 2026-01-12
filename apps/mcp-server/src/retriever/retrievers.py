@@ -3,19 +3,53 @@ Retrieval components for QueryEngine.
 
 Contains all retrieval implementations:
 - DenseRetriever: Vector similarity search
-- BM25Retriever: Lexical keyword search
+- BM25Retriever: Lexical keyword search with Vietnamese tokenization
 - SparseRetriever: SPLADE (future)
 """
 
 import json
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import NodeWithScore, TextNode
 from llama_index.retrievers.bm25 import BM25Retriever
 
 from ..utils.logger import logger
+
+
+def vietnamese_tokenizer(text: str) -> List[str]:
+    """
+    Vietnamese word tokenizer for BM25.
+
+    Uses underthesea for accurate Vietnamese word segmentation.
+    This ensures compound words like "Học phí" are treated as single tokens.
+
+    Args:
+        text: Input text to tokenize
+
+    Returns:
+        List of tokens (lowercase)
+
+    Examples:
+        >>> vietnamese_tokenizer("Học phí sinh viên UIT")
+        ['học_phí', 'sinh_viên', 'uit']
+    """
+    try:
+        from underthesea import word_tokenize
+
+        # word_tokenize returns space-separated tokens with underscores for compound words
+        # e.g., "Học phí" -> "Học_phí"
+        tokenized = word_tokenize(text, format="text")
+        # Split and lowercase
+        tokens = tokenized.lower().split()
+        return tokens
+    except Exception as e:
+        logger.warning(
+            f"[TOKENIZER] underthesea failed, falling back to simple split: {e}"
+        )
+        # Fallback to simple space-based tokenization
+        return text.lower().split()
 
 
 class DenseRetriever:
@@ -25,11 +59,7 @@ class DenseRetriever:
     Uses VectorStoreIndex (ChromaDB + OpenAI embeddings) for similarity search.
     """
 
-    def __init__(
-        self,
-        similarity_top_k: int = 20,
-        min_score_threshold: float = 0.25
-    ):
+    def __init__(self, similarity_top_k: int = 10, min_score_threshold: float = 0.25):
         """
         Initialize DenseRetriever.
 
@@ -39,13 +69,11 @@ class DenseRetriever:
         """
         self.similarity_top_k = similarity_top_k
         self.min_score_threshold = min_score_threshold
-        logger.info(f"[DENSE RETRIEVER] Initialized (top_k={similarity_top_k}, min_score={min_score_threshold})")
+        logger.info(
+            f"[DENSE RETRIEVER] Initialized (top_k={similarity_top_k}, min_score={min_score_threshold})"
+        )
 
-    def retrieve(
-        self,
-        query: str,
-        collection: VectorStoreIndex
-    ) -> List[NodeWithScore]:
+    def retrieve(self, query: str, collection: VectorStoreIndex) -> List[NodeWithScore]:
         """
         Retrieve using dense vector embeddings.
 
@@ -63,12 +91,13 @@ class DenseRetriever:
 
         # Filter by minimum score threshold
         filtered_nodes = [
-            node for node in nodes
-            if node.score >= self.min_score_threshold
+            node for node in nodes if node.score >= self.min_score_threshold
         ]
 
         if len(filtered_nodes) < len(nodes):
-            logger.info(f"[DENSE RETRIEVER] Filtered {len(nodes) - len(filtered_nodes)} nodes (score < {self.min_score_threshold})")
+            logger.info(
+                f"[DENSE RETRIEVER] Filtered {len(nodes) - len(filtered_nodes)} nodes (score < {self.min_score_threshold})"
+            )
 
         return filtered_nodes
 
@@ -80,7 +109,7 @@ class BM25RetrieverWrapper:
     Loads corpus from chunks.json files and provides BM25 keyword search.
     """
 
-    def __init__(self, similarity_top_k: int = 20):
+    def __init__(self, similarity_top_k: int = 10):
         """
         Initialize BM25 retriever.
 
@@ -92,17 +121,19 @@ class BM25RetrieverWrapper:
         self._setup()
 
     def _setup(self):
-        """Initialize BM25 retriever from chunks.json files."""
-        logger.info("[BM25 RETRIEVER] Initializing...")
+        """Initialize BM25 retriever from chunks.json files with Vietnamese tokenizer."""
+        logger.info("[BM25 RETRIEVER] Initializing with Vietnamese tokenizer...")
         try:
             nodes = self._load_corpus()
             if nodes:
                 self.retriever = BM25Retriever.from_defaults(
                     nodes=nodes,
                     similarity_top_k=self.similarity_top_k,
-                    language="en"
+                    tokenizer=vietnamese_tokenizer,  # Use Vietnamese word segmentation
                 )
-                logger.info(f"[BM25 RETRIEVER] Initialized with {len(nodes)} nodes")
+                logger.info(
+                    f"[BM25 RETRIEVER] Initialized with {len(nodes)} nodes (Vietnamese tokenizer)"
+                )
             else:
                 logger.warning("[BM25 RETRIEVER] No nodes found for corpus")
                 self.retriever = None
@@ -122,7 +153,9 @@ class BM25RetrieverWrapper:
             Path("data/stages/regulation"),
             Path("/app/data/stages/regulation"),
             project_root / "data/stages/regulation",
-            Path("/home/giakiet05/programming/projects/uit-ai-assistant/data/stages/regulation")
+            Path(
+                "/home/giakiet05/programming/projects/uit-ai-assistant/data/stages/regulation"
+            ),
         ]
 
         data_path = None
@@ -133,7 +166,9 @@ class BM25RetrieverWrapper:
                 break
 
         if not data_path:
-            logger.warning("[BM25 RETRIEVER] Could not find data/stages/regulation directory")
+            logger.warning(
+                "[BM25 RETRIEVER] Could not find data/stages/regulation directory"
+            )
             return []
 
         # Scan for chunks.json files
@@ -154,7 +189,7 @@ class BM25RetrieverWrapper:
                         node = TextNode(
                             text=text,
                             metadata=metadata,
-                            id_=chunk.get("id") or chunk.get("chunk_id")
+                            id_=chunk.get("id") or chunk.get("chunk_id"),
                         )
                         nodes.append(node)
             except Exception as e:

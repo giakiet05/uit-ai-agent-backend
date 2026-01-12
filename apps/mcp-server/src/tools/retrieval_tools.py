@@ -46,8 +46,8 @@ def _init_query_engine() -> QueryEngine:
         use_reranker=True,
         top_k=3,
         retrieval_top_k=10,  # Reduced from 20 for faster reranking
-        rerank_score_threshold=0.1,
-        min_score_threshold=0.15,
+        rerank_score_threshold=0.25,  # Raised from 0.1 to filter low-quality results
+        min_score_threshold=0.2,      # Raised from 0.15 for better initial retrieval quality
         use_modal=True,
         use_hyde=settings.retrieval.USE_HYDE,
         hyde_model=settings.retrieval.HYDE_MODEL,

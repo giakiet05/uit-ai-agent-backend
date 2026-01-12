@@ -119,11 +119,10 @@ class Reranker:
         if len(filtered_nodes) < len(nodes):
             logger.info(f"[RERANKER] Filtered {len(nodes) - len(filtered_nodes)} low-confidence results (score < {self.rerank_score_threshold})")
 
-        # Always return at least top-1 chunk if no chunks pass threshold
-        if len(filtered_nodes) == 0 and len(nodes) > 0:
-            logger.info(f"[RERANKER] No results passed threshold ({self.rerank_score_threshold}), returning top-1 chunk (score: {nodes[0].score:.4f})")
-            filtered_nodes = [nodes[0]]
-        elif len(filtered_nodes) > 0:
+        # Log final results
+        if len(filtered_nodes) == 0:
+            logger.info(f"[RERANKER] No results passed threshold ({self.rerank_score_threshold}), returning empty list")
+        else:
             logger.info(f"[RERANKER] Reranking complete. Top score: {filtered_nodes[0].score:.4f}, kept {len(filtered_nodes)}/{len(nodes)} nodes")
 
         # Apply program-based filtering to avoid confusion between similar majors

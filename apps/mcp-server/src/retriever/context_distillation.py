@@ -98,6 +98,11 @@ class ContextDistiller:
             response = self.llm.complete(prompt)
             distilled = response.text.strip()
             
+            # Check if LLM explicitly said no relevant info found
+            if "KHÔNG TÌM THẤY" in distilled.upper() and len(distilled) < 50:
+                print(f"[CONTEXT-DISTILL] LLM determined no relevant info found")
+                return "KHÔNG TÌM THẤY"  # Return as-is for agent to read
+            
             # Validation: Check if distillation actually reduced content
             original_len = len(full_context)
             distilled_len = len(distilled)
@@ -127,7 +132,7 @@ class ContextDistiller:
     
     def _build_distillation_prompt(self, query: str, context: str) -> str:
         """
-        Build prompt for context distillation.
+        Build prompt for context distillation with confidence scoring.
         
         Args:
             query: User's question
@@ -136,22 +141,50 @@ class ContextDistiller:
         Returns:
             Distillation prompt
         """
-        return f"""Bạn là chuyên gia trích xuất thông tin. Nhiệm vụ của bạn là TÌM và TRÍCH XUẤT **CHỈ** những thông tin TRỰC TIẾP liên quan đến câu hỏi sau.
+        return f"""Bạn là chuyên gia trích xuất thông tin từ văn bản quy định. Nhiệm vụ: TÌM và TRÍCH XUẤT **CHỈ** thông tin TRỰC TIẾP trả lời câu hỏi.
 
 CÂU HỎI: {query}
 
-NGUYÊN TẮC:
-1. Chỉ trích xuất câu/đoạn văn TRỰC TIẾP trả lời câu hỏi
-2. KHÔNG thêm, sửa, hoặc diễn giải - copy y nguyên từ context
-3. KHÔNG tóm tắt - giữ nguyên chi tiết quan trọng (số liệu, điều kiện, v.v.)
-4. Nếu thông tin nằm ở nhiều chunks khác nhau, trích xuất TẤT CẢ
-5. Loại bỏ info KHÔNG liên quan (ví dụ: hỏi về TOEIC thì bỏ phần học phí)
-6. Giữ cấu trúc rõ ràng (bullet points nếu có nhiều điểm)
+HƯỚNG DẪN TRÍCH XUẤT:
+
+1. **ĐÁNH GIÁ ĐỘ LIÊN QUAN:**
+   - Đọc kỹ câu hỏi - xác định CHÍNH XÁC user muốn biết gì
+   - Kiểm tra context có chứa đáp án TRỰC TIẾP không
+   - Nếu KHÔNG TÌM THẤY đáp án → Trả về "KHÔNG TÌM THẤY"
+
+2. **TRÍCH XUẤT (nếu tìm thấy):**
+   - Copy y nguyên text từ context (KHÔNG sửa, KHÔNG diễn giải)
+   - CHỈ lấy phần trả lời TRỰC TIẾP câu hỏi
+   - Giữ nguyên số liệu, điều khoản, điều kiện
+   - Loại bỏ info liên quan NHƯNG KHÔNG trả lời trực tiếp
+
+3. **VÍ DỤ PHÂN BIỆT:**
+
+✅ ĐÚNG:
+- Query: "TOEIC tốt nghiệp?"
+- Context có: Bảng xếp lớp + Bảng tốt nghiệp
+- Trích xuất: CHỈ bảng tốt nghiệp (bỏ bảng xếp lớp)
+
+✅ ĐÚNG:
+- Query: "Giới hạn tín chỉ?"
+- Context có: Điều 16 về cảnh báo học vụ
+- Trích xuất: "KHÔNG TÌM THẤY" (context không nói về giới hạn tín chỉ)
+
+❌ SAI:
+- Query: "TOEIC tốt nghiệp?"
+- Trích xuất: Cả 3 bảng (xếp lớp + miễn học + tốt nghiệp)
+- Lỗi: Lấy thừa info không trả lời trực tiếp
+
+❌ SAI:
+- Query: "Điều kiện tốt nghiệp?"
+- Context: "Sinh viên cần có TOEIC ≥ 450 điểm"
+- Trích xuất: "Sinh viên cần TOEIC 450+"
+- Lỗi: Sửa text gốc (≥ 450 → 450+), có thể sai nghĩa
 
 CONTEXT ĐỂ TRÍCH XUẤT:
 {context}
 
-THÔNG TIN LIÊN QUAN (chỉ trả về text được trích xuất, KHÔNG giải thích):"""
+OUTPUT (chỉ trả về text được trích xuất hoặc "KHÔNG TÌM THẤY", KHÔNG giải thích):"""
     
     def _format_chunks_raw(self, nodes: List[NodeWithScore]) -> str:
         """

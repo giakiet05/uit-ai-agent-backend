@@ -304,6 +304,13 @@ class QueryEngine:
                     # Add distilled context to response
                     formatted_result['distilled_context'] = distilled_context
                     logger.info(f"[QUERY ENGINE] ✓ Context distilled ({len(distilled_context)} chars)")
+                    
+                    # Optimization: Clear document content to save tokens (metadata kept for references)
+                    # Agent only needs distilled_context for answering, but metadata for PDF/source links
+                    for doc in formatted_result.get('documents', []):
+                        doc['content'] = ""
+                    logger.info(f"[QUERY ENGINE] ✓ Cleared content from {len(formatted_result.get('documents', []))} documents (metadata kept)")
+                    
                 except Exception as e:
                     logger.error(f"[QUERY ENGINE] Context distillation failed: {e}")
                     # Continue without distilled context - formatted_result is still valid
