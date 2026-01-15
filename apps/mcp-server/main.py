@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.tools.retrieval_tools import register_retrieval_tools
 from src.tools.daa_scraping_tools import register_daa_tools
+from src.tools.reasoning_tools import register_reasoning_tools
 
 # Initialize FastMCP server
 mcp = FastMCP("UIT MCP Server")
@@ -26,6 +27,7 @@ mcp = FastMCP("UIT MCP Server")
 print("[MCP SERVER] Registering tools...")
 register_retrieval_tools(mcp)
 register_daa_tools(mcp)
+register_reasoning_tools(mcp)
 print("[MCP SERVER] All tools registered successfully")
 
 # Create MCP ASGI app

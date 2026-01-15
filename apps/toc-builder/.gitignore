@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Environment
+.env
+
+# Knowledge Builder data (raw, processed, vector store)
+data/
+
+# Temporary files
+*.tmp
+*.log

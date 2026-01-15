@@ -21,6 +21,10 @@ class Paths:
     # Vector store path (read-only, built by knowledge-builder)
     VECTOR_STORE_DIR = DATA_DIR / "vector_store"
 
+    # ToC structures path (read-only, built by toc-builder)
+    TOC_DIR = DATA_DIR / "toc"
+    TOC_INDEX_FILE = TOC_DIR / "toc_index.json"
+
 
 class Credentials:
     """API keys and sensitive credentials."""
@@ -61,6 +65,17 @@ class Retrieval:
         self.DISTILLATION_MIN_CHUNKS = int(os.getenv("DISTILLATION_MIN_CHUNKS", "3"))  # Only distill if >= N chunks
 
 
+class ReasoningRetrieval:
+    """Configuration for reasoning-based retrieval using ToC structures."""
+
+    def __init__(self):
+        """Load reasoning retrieval configs from environment."""
+        load_dotenv()
+        self.MODEL = os.getenv("REASONING_MODEL", "gpt-5-mini")
+        self.MAX_DOCS = int(os.getenv("REASONING_MAX_DOCS", "3"))
+        self.MAX_NODES = int(os.getenv("REASONING_MAX_NODES", "5"))
+
+
 class Settings:
     """
     Main settings singleton for MCP Server.
@@ -82,8 +97,10 @@ class Settings:
 
         # Dynamic configs (load from env)
         self.retrieval = Retrieval()
+        self.reasoning = ReasoningRetrieval()
 
         print(f"[CONFIG] Vector store path: {self.paths.VECTOR_STORE_DIR}")
+        print(f"[CONFIG] ToC path: {self.paths.TOC_DIR}")
         print(f"[CONFIG] Embed model: {self.retrieval.EMBED_MODEL}")
 
 
