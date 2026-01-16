@@ -17,7 +17,7 @@ from src.config.llm_provider import create_llm
 from src.config.settings import settings
 from src.tools.mcp_loader import load_mcp_tools
 from src.tools.credential_tool import get_user_credential
-from src.graph.agent_graph import create_agent_graph
+from src.graph.agent_graph import create_agent_graph_with_classifier, create_agent_graph
 from src.graph.checkpointer import create_checkpointer
 from src.grpc.pb import agent_pb2, agent_pb2_grpc
 from src.utils.logger import logger
@@ -164,8 +164,8 @@ async def _initialize_agent():
         logger.warning("⚠️  Running without persistence...\n")
         checkpointer = None
 
-    # Step 5: Create agent graph
-    logger.info("[5/5] Creating agent graph...")
+    # Step 5: Create agent graph with classifier
+    logger.info("[5/5] Creating agent graph with classifier...")
     graph = create_agent_graph(
         llm=llm,
         tools=all_tools,

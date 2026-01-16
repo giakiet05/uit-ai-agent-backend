@@ -22,7 +22,9 @@ class ReasoningSearch:
 
     def __init__(
         self,
-        model: str = "gpt-5-mini",
+        document_selection_model: str = "gpt-5-nano",
+        node_selection_model: str = "gpt-5-mini",
+        answer_generation_model: str = "gpt-5-mini",
         max_docs: int = 3,
         max_nodes: int = 5,
     ):
@@ -30,18 +32,28 @@ class ReasoningSearch:
         Initialize reasoning search.
 
         Args:
-            model: LLM model for reasoning
+            document_selection_model: LLM model for step 1 (document selection from index)
+            node_selection_model: LLM model for step 2 (node selection from ToC tree)
+            answer_generation_model: LLM model for step 4 (answer generation from context)
             max_docs: Maximum documents to select in step 1
             max_nodes: Maximum nodes to select per document in step 2
         """
         self.client = OpenAI(api_key=settings.credentials.OPENAI_API_KEY)
-        self.model = model
+        self.document_selection_model = document_selection_model
+        self.node_selection_model = node_selection_model
+        self.answer_generation_model = answer_generation_model
         self.max_docs = max_docs
         self.max_nodes = max_nodes
 
         self.toc_loader = TocLoader()
 
-        logger.info(f"[REASONING SEARCH] Initialized with model={model}, max_docs={max_docs}, max_nodes={max_nodes}")
+        logger.info(
+            f"[REASONING SEARCH] Initialized with "
+            f"doc_selection={document_selection_model}, "
+            f"node_selection={node_selection_model}, "
+            f"answer_gen={answer_generation_model}, "
+            f"max_docs={max_docs}, max_nodes={max_nodes}"
+        )
 
     def search(self, query: str) -> Dict[str, Any]:
         """
@@ -153,9 +165,9 @@ Hướng dẫn:
 
 Các document ID được chọn (chỉ JSON array):"""
 
-        logger.info(f"[REASONING SEARCH] Calling LLM ({self.model}) to select documents...")
+        logger.info(f"[REASONING SEARCH] Calling LLM ({self.document_selection_model}) to select documents...")
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=self.document_selection_model,
             messages=[{"role": "user", "content": prompt}],
         )
 
@@ -205,9 +217,9 @@ Hướng dẫn:
 
 Các node ID được chọn (chỉ JSON array):"""
 
-        logger.info(f"[REASONING SEARCH] Calling LLM ({self.model}) to select nodes...")
+        logger.info(f"[REASONING SEARCH] Calling LLM ({self.node_selection_model}) to select nodes...")
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=self.node_selection_model,
             messages=[{"role": "user", "content": prompt}],
         )
 
@@ -285,9 +297,9 @@ Hướng dẫn:
 
 Câu trả lời:"""
 
-        logger.info(f"[REASONING SEARCH] Calling LLM ({self.model}) to generate answer...")
+        logger.info(f"[REASONING SEARCH] Calling LLM ({self.answer_generation_model}) to generate answer...")
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=self.answer_generation_model,
             messages=[{"role": "user", "content": prompt}],
         )
 

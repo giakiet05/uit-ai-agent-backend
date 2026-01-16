@@ -17,7 +17,7 @@ class LlamaParseOCR:
 
     def __init__(
         self,
-        tier: str = "agentic_plus",
+        tier: str = "agentic",
     ):
         """
         Initialize LlamaParseOCR.
@@ -115,6 +115,8 @@ Hoặc các biến thể như:
 TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN          Độc lập - Tự do - Hạnh phúc
 
 Đây là các header tiêu chuẩn của văn bản hành chính và cần được loại bỏ bất kể định dạng chính xác hay các biến thể nhỏ về văn bản.
+
+Quan trọng: Tuyệt đối không được ghi kèm suy nghĩ của bạn trong output. Chỉ trả về nội dung đã được xử lý theo các quy tắc trên.
 """
 
         try:

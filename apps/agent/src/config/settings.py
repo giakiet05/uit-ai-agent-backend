@@ -27,6 +27,9 @@ class LLM:
         load_dotenv()
         self.PROVIDER = os.getenv("LLM_PROVIDER", "openai")
         self.MODEL = os.getenv("LLM_MODEL", "gpt-5-nano")
+        
+        # Classifier model for intent routing
+        self.CLASSIFIER_MODEL = os.getenv("CLASSIFIER_MODEL", "gpt-5-nano")
 
 
 class Checkpointer:

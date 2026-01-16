@@ -3,13 +3,14 @@ LangGraph agent workflow definition.
 """
 import asyncio
 
+from typing import Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from functools import partial
 from langchain_core.messages import ToolMessage
 
 from .state import AgentState
-from .nodes import agent_node, should_continue
+from .nodes import agent_node, should_continue, classifier_node, direct_search_node
 from ..utils.logger import logger
 
 
@@ -155,6 +156,109 @@ def create_agent_graph(llm, tools, checkpointer=None, tool_timeout=120):
     workflow.add_edge(START, "agent")
 
     # Add conditional edges from agent
+    workflow.add_conditional_edges(
+        "agent",
+        should_continue,  # Routing function
+        {
+            "tools": "tools",  # If LLM calls tools -> go to tools node
+            "end": END         # Otherwise -> finish
+        }
+    )
+
+    # After tools execute -> back to agent for next reasoning step
+    workflow.add_edge("tools", "agent")
+
+    # Compile graph with checkpointer for state persistence
+    graph = workflow.compile(
+        checkpointer=checkpointer,
+    )
+
+    return graph
+
+
+def route_by_intent(state: AgentState) -> Literal["direct_search", "agent"]:
+    """
+    Router function: route based on intent classification.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        "direct_search" if intent is search, "agent" otherwise
+    """
+    intent = state.get("intent", "agent")
+    
+    if intent == "search":
+        logger.info("[ROUTER] Intent=search → Routing to direct_search")
+        return "direct_search"
+    else:
+        logger.info("[ROUTER] Intent=agent → Routing to agent loop")
+        return "agent"
+
+
+def create_agent_graph_with_classifier(llm, tools, checkpointer=None, tool_timeout=120):
+    """
+    Create LangGraph agent with classifier-based routing.
+
+    Workflow:
+        START -> classifier -> [direct_search | agent]
+                                      ↓            ↓
+                                     END     [tools | END]
+                                               ↓
+                                            agent
+
+    Args:
+        llm: Language model instance
+        tools: List of tools (MCP tools + native tools)
+        checkpointer: State persistence layer (PostgresSaver or RedisSaver)
+        tool_timeout: Timeout for tool execution in seconds (default: 120)
+
+    Returns:
+        Compiled graph ready for invocation
+    """
+    # Find search_documents tool
+    search_tool = None
+    for tool in tools:
+        if tool.name == "search_documents":
+            search_tool = tool
+            break
+    
+    if not search_tool:
+        logger.warning("[GRAPH] search_documents tool not found, direct_search will fail")
+    
+    # Bind tools to LLM
+    llm_with_tools = llm.bind_tools(tools)
+
+    # Create partial functions
+    agent_with_llm = partial(agent_node, llm_with_tools=llm_with_tools)
+    direct_search_with_tool = partial(direct_search_node, search_tool=search_tool)
+
+    # Define graph
+    workflow = StateGraph(AgentState)
+
+    # Add nodes
+    workflow.add_node("classifier", classifier_node)  # Intent classification
+    workflow.add_node("direct_search", direct_search_with_tool)  # Direct search bypass
+    workflow.add_node("agent", agent_with_llm)  # LLM reasoning node
+    workflow.add_node("tools", _create_tool_node_with_logging_and_timeout(tools, timeout=tool_timeout))
+
+    # Set entry point: START -> classifier
+    workflow.add_edge(START, "classifier")
+
+    # Route from classifier based on intent
+    workflow.add_conditional_edges(
+        "classifier",
+        route_by_intent,
+        {
+            "direct_search": "direct_search",
+            "agent": "agent"
+        }
+    )
+
+    # Direct search goes straight to END
+    workflow.add_edge("direct_search", END)
+
+    # Agent loop (original flow)
     workflow.add_conditional_edges(
         "agent",
         should_continue,  # Routing function

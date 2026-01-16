@@ -141,29 +141,69 @@ class TocIndexBuilder:
 
         return None
 
+    def _load_existing_index(self) -> Dict[str, Any]:
+        """
+        Load existing toc_index.json if exists.
+
+        Returns:
+            Existing index dict, or empty index if not found
+        """
+        if self.index_file.exists():
+            try:
+                with open(self.index_file, "r", encoding="utf-8") as f:
+                    existing_index = json.load(f)
+                logger.info(f"[TOC-INDEX] Loaded existing index with {existing_index.get('total_documents', 0)} documents")
+                return existing_index
+            except Exception as e:
+                logger.warning(f"[TOC-INDEX] Failed to load existing index: {e}. Starting fresh.")
+        
+        return {"total_documents": 0, "documents": []}
+
     def build_index(self) -> Dict[str, Any]:
         """
         Build ToC index from all ToC structure files.
+        
+        Merges with existing index:
+        - Preserves existing documents (keeps hand-written summaries)
+        - Only adds NEW documents (not yet in index)
 
         Returns:
             Index dict with list of documents and metadata
         """
         logger.info("[TOC-INDEX] Building ToC index...")
 
-        documents = []
+        # Load existing index
+        existing_index = self._load_existing_index()
+        existing_docs = {doc["doc_id"]: doc for doc in existing_index.get("documents", [])}
 
         # Find all *_structure.json files in toc_dir
         toc_files = sorted(self.toc_dir.glob("*_structure.json"))
 
         logger.info(f"[TOC-INDEX] Found {len(toc_files)} ToC files")
 
+        new_count = 0
+        kept_count = 0
+
         for toc_file in toc_files:
             metadata = self._extract_metadata(toc_file)
-            if metadata:
-                documents.append(metadata)
-                logger.info(
-                    f"  - {metadata['doc_id']}: {metadata['doc_name']} ({metadata['year'] or 'no year'})"
-                )
+            if not metadata:
+                continue
+            
+            doc_id = metadata["doc_id"]
+            
+            # Check if document already exists in index
+            if doc_id in existing_docs:
+                # Keep existing entry (preserves hand-written summary)
+                logger.info(f"  ✓ {doc_id}: KEPT existing entry")
+                kept_count += 1
+            else:
+                # Add new document
+                existing_docs[doc_id] = metadata
+                logger.info(f"  + {doc_id}: ADDED new entry - {metadata['doc_name']} ({metadata['year'] or 'no year'})")
+                new_count += 1
+
+        # Convert back to list
+        documents = list(existing_docs.values())
 
         # Create index structure
         index = {
@@ -171,7 +211,7 @@ class TocIndexBuilder:
             "documents": documents,
         }
 
-        logger.info(f"[TOC-INDEX] Total documents indexed: {len(documents)}")
+        logger.info(f"[TOC-INDEX] Summary: {kept_count} kept, {new_count} added, {len(documents)} total")
 
         return index
 

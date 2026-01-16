@@ -36,7 +36,9 @@ def _get_reasoning_search() -> ReasoningSearch:
 
     if _reasoning_search is None:
         _reasoning_search = ReasoningSearch(
-            model=settings.reasoning.MODEL,
+            document_selection_model=settings.reasoning.DOCUMENT_SELECTION_MODEL,
+            node_selection_model=settings.reasoning.NODE_SELECTION_MODEL,
+            answer_generation_model=settings.reasoning.ANSWER_GENERATION_MODEL,
             max_docs=settings.reasoning.MAX_DOCS,
             max_nodes=settings.reasoning.MAX_NODES,
         )
@@ -55,25 +57,24 @@ def register_reasoning_tools(mcp: FastMCP):
     @mcp.tool()
     async def search_documents(query: str) -> ToolResult:
         """
-        Tìm kiếm và trả lời câu hỏi về các văn bản quy định của UIT.
+        Truy vấn thông tin quy định và chương trình đào tạo của Trường Đại học Công nghệ Thông tin - ĐHQG TP.HCM.
 
-        Tool này thực hiện full RAG pipeline:
-        1. Chọn tài liệu liên quan từ index
-        2. Chọn các mục liên quan từ cấu trúc tài liệu
-        3. Trích xuất nội dung từ các mục đã chọn
-        4. Sinh câu trả lời dựa trên nội dung
+        Dùng tool này khi cần biết về:
+        - Quy định, quy chế, chính sách của trường
+        - Chương trình đào tạo của các ngành (ví dụ: môn học, lộ trình học, cơ hội nghề nghiệp, v.v.)
 
-        Sử dụng cho các câu hỏi về:
-        - Quy chế, quy định đào tạo
-        - Chương trình học, môn học
-        - Các văn bản hành chính của UIT
+        Tool này sử dụng phương pháp reasoning-based RAG, cách hoạt động như sau:
+        1. Dựa vào câu hỏi, chọn tài liệu phù hợp.
+        2. Từ các tài liệu đã chọn, chọn các phần (node) liên quan.
+        3. Dựa vào các phần đã chọn, tạo câu trả lời chi tiết cho câu hỏi.
 
         Args:
-            query: Câu hỏi bằng tiếng Việt
+            query: Câu hỏi về quy định, quy chế, chính sách, hoặc chương trình đào tạo. Lưu ý: câu hỏi nên tự nhiên, không dùng cách đặt câu hỏi giống như cho vector search.
 
         Returns:
-            Câu trả lời kèm nguồn tham khảo
+            Câu trả lời chi tiết kèm nguồn tham khảo (tên tài liệu và node liên quan)
         """
+
         try:
             search = _get_reasoning_search()
             result = search.search_and_answer(query)

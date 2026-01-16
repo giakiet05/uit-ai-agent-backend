@@ -71,9 +71,15 @@ class ReasoningRetrieval:
     def __init__(self):
         """Load reasoning retrieval configs from environment."""
         load_dotenv()
-        self.MODEL = os.getenv("REASONING_MODEL", "gpt-5-mini")
+        
+        # Model configurations for each step
+        self.DOCUMENT_SELECTION_MODEL = os.getenv("REASONING_DOC_SELECTION_MODEL", "gpt-5-nano")
+        self.NODE_SELECTION_MODEL = os.getenv("REASONING_NODE_SELECTION_MODEL", "gpt-5-mini")
+        self.ANSWER_GENERATION_MODEL = os.getenv("REASONING_ANSWER_GEN_MODEL", "gpt-5-mini")
+        
+        # Search constraints
         self.MAX_DOCS = int(os.getenv("REASONING_MAX_DOCS", "3"))
-        self.MAX_NODES = int(os.getenv("REASONING_MAX_NODES", "5"))
+        self.MAX_NODES = int(os.getenv("REASONING_MAX_NODES", "3"))
 
 
 class Settings:

@@ -25,7 +25,6 @@ mcp = FastMCP("UIT MCP Server")
 
 # Register all tools
 print("[MCP SERVER] Registering tools...")
-register_retrieval_tools(mcp)
 register_daa_tools(mcp)
 register_reasoning_tools(mcp)
 print("[MCP SERVER] All tools registered successfully")
