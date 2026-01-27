@@ -44,6 +44,7 @@ type Controllers struct {
 	controller.AdminUserController
 	controller.ChatController
 	controller.CookieController
+	controller.FileController
 }
 
 func initRepos(client *mongo.Client, db *mongo.Database) *Repos {
@@ -57,11 +58,14 @@ func initRepos(client *mongo.Client, db *mongo.Database) *Repos {
 }
 
 func initServices(repos *Repos, redisClient *redis.Client, emailSender email.Sender, eventBus bus.EventBus, geminiClient *gemini.GeminiClient, agentClient *platformgrpc.AgentClient) *Services {
+	// Initialize source enricher
+	sourceEnricher := service.NewSourceEnricher(config.Cfg.DataDir, config.Cfg.BaseURL)
+
 	return &Services{
 		AuthService:         service.NewAuthService(repos.UserRepo, repos.EmailVerificationRepo, emailSender, redisClient),
 		UserService:         service.NewUserService(repos.UserRepo, eventBus, redisClient),
 		NotificationService: service.NewNotificationService(repos.NotificationRepo, repos.UserRepo, eventBus, redisClient),
-		ChatService:         service.NewChatService(repos.ChatSessionRepo, repos.ChatMessageRepo, agentClient),
+		ChatService:         service.NewChatService(repos.ChatSessionRepo, repos.ChatMessageRepo, agentClient, sourceEnricher),
 	}
 }
 
@@ -74,6 +78,7 @@ func initControllers(services *Services, wsHub *ws.Hub, redisClient *redis.Clien
 		AdminUserController:    *controller.NewAdminUserController(services.AdminUserService),
 		ChatController:         *controller.NewChatController(services.ChatService),
 		CookieController:       *controller.NewCookieController(redisClient),
+		FileController:         *controller.NewFileController(config.Cfg.DataDir),
 	}
 }
 
@@ -94,6 +99,7 @@ func initRoutes(controllers *Controllers, r *gin.Engine) {
 	route.RegisterAdminUserRoutes(api, &controllers.AdminUserController)
 	route.RegisterChatRoutes(api, &controllers.ChatController)
 	route.RegisterCookieRoutes(api, &controllers.CookieController)
+	route.RegisterFileRoutes(api, &controllers.FileController)
 }
 
 func Init() (*gin.Engine, error) {

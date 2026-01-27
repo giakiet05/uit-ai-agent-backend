@@ -11,6 +11,7 @@ import (
 // AppConfig holds the application's configuration
 type AppConfig struct {
 	Port                 string
+	BaseURL              string // Base URL for this service (e.g., http://localhost:8080)
 	MongoURI             string
 	DBName               string
 	JWTSecret            string
@@ -22,6 +23,7 @@ type AppConfig struct {
 	ExtensionOrigin      string
 	OTPExpirationMinutes int
 	AgentGRPCAddr        string
+	DataDir              string // Path to data/ directory for ToC files
 	SMTP                 SMTPConfig
 	Redis                RedisConfig
 	Google               GoogleConfig
@@ -82,6 +84,7 @@ func LoadConfig() {
 
 	//Port
 	Cfg.Port = getEnv("PORT", "8080")
+	Cfg.BaseURL = getEnv("BASE_URL", "http://localhost:8080")
 
 	// Database & App
 	Cfg.MongoURI = getEnv("MONGO_URI", "mongodb://localhost:27017")
@@ -101,6 +104,9 @@ func LoadConfig() {
 
 	// Agent
 	Cfg.AgentGRPCAddr = getEnv("AGENT_GRPC_ADDR", "localhost:50051")
+
+	// Data
+	Cfg.DataDir = getEnv("DATA_DIR", "../../data") // Path to shared data/ directory
 
 	// Services
 	Cfg.SMTP.Host = getEnv("SMTP_HOST", "smtp.example.com")

@@ -91,11 +91,22 @@ type ChatMessageResponse struct {
 	CreatedAt time.Time      `json:"created_at"`
 }
 
-// SourceInfo represents a RAG source citation
+// SourceInfo represents a reasoning-based RAG source citation
 type SourceInfo struct {
-	Title   string `json:"title"`
-	URL     string `json:"url,omitempty"`
-	Snippet string `json:"snippet,omitempty"` // Truncated content
+	DocID     string     `json:"doc_id"`               // Document ID
+	DocTitle  string     `json:"doc_title"`            // Document title
+	DocType   string     `json:"doc_type"`             // "regulation" | "curriculum"
+	Year      int        `json:"year"`                 // Document year
+	SourceURL *string    `json:"source_url,omitempty"` // URL for curriculum (null for regulation)
+	PDFURL    *string    `json:"pdf_url,omitempty"`    // PDF download URL for regulation (null for curriculum)
+	Nodes     []NodeInfo `json:"nodes"`                // Referenced nodes
+}
+
+// NodeInfo represents a referenced node in a document
+type NodeInfo struct {
+	NodeID string `json:"node_id"` // Node ID (e.g., "0001")
+	Title  string `json:"title"`   // Node title
+	Text   string `json:"text"`    // Node text content (may be truncated)
 }
 
 // PaginatedSessionsResponse for paginated session list

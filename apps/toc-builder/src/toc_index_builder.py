@@ -20,6 +20,35 @@ class TocIndexBuilder:
         """Initialize ToC index builder."""
         self.toc_dir = settings.paths.TOC_DIR
         self.index_file = settings.paths.TOC_INDEX_FILE
+        self.raw_dir = settings.paths.DATA_DIR / "raw"
+
+    def _detect_doc_type(self, doc_id: str) -> tuple[str, str | None]:
+        """
+        Detect document type based on raw file location.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            Tuple of (doc_type, source_url)
+            - doc_type: "regulation" | "curriculum"
+            - source_url: URL string for curriculum, None for regulation
+        """
+        # Check if PDF exists in regulation folder
+        regulation_pdf = self.raw_dir / "regulation" / f"{doc_id}.pdf"
+        if regulation_pdf.exists():
+            return ("regulation", None)
+
+        # Check if MD exists in curriculum folder
+        curriculum_md = self.raw_dir / "curriculum" / f"{doc_id}.md"
+        if curriculum_md.exists():
+            # TODO: Map doc_id to actual UIT curriculum URL
+            # For now, return None - will be filled manually later
+            return ("curriculum", None)
+
+        # Default to regulation if file not found
+        logger.warning(f"[DETECT] Could not find raw file for {doc_id}, defaulting to regulation")
+        return ("regulation", None)
 
     def _extract_metadata(self, toc_file: Path) -> Dict[str, Any]:
         """
@@ -29,7 +58,7 @@ class TocIndexBuilder:
             toc_file: Path to ToC structure JSON file
 
         Returns:
-            Metadata dict with doc_id, doc_name, summary, year
+            Metadata dict with doc_id, doc_name, summary, year, doc_type, source_url
         """
         try:
             with open(toc_file, "r", encoding="utf-8") as f:
@@ -52,12 +81,17 @@ class TocIndexBuilder:
             # Get doc_id from filename (remove _structure.json)
             doc_id = toc_file.stem.replace("_structure", "")
 
+            # Detect doc_type based on raw file location
+            doc_type, source_url = self._detect_doc_type(doc_id)
+
             return {
                 "doc_id": doc_id,
                 "doc_name": doc_name,
                 "toc_path": toc_file.name,
                 "summary": summary,
                 "year": year,
+                "doc_type": doc_type,
+                "source_url": source_url,
             }
 
         except Exception as e:

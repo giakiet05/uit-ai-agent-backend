@@ -76,58 +76,33 @@ func (c *AgentClient) Chat(ctx context.Context, message string, userID string, t
 
 // convertResponse converts protobuf ChatResponse to AgentResponse
 func (c *AgentClient) convertResponse(resp *pb.ChatResponse) *AgentResponse {
-	// Convert tool calls
-	toolCalls := make([]ToolCall, len(resp.ToolCalls))
-	for i, tc := range resp.ToolCalls {
-		toolCalls[i] = ToolCall{
-			ToolName: tc.ToolName,
-			ArgsJSON: tc.ArgsJson,
-			Output:   tc.Output,
-		}
-	}
-
-	// Convert sources
-	sources := make([]Source, len(resp.Sources))
+	// Convert sources (ReasoningSource with just IDs)
+	sources := make([]ReasoningSource, len(resp.Sources))
 	for i, src := range resp.Sources {
-		sources[i] = Source{
-			Title:   src.Title,
-			Content: src.Content,
-			Score:   src.Score,
-			URL:     src.Url,
+		sources[i] = ReasoningSource{
+			DocID:   src.DocId,
+			NodeIDs: src.NodeIds,
 		}
 	}
 
 	return &AgentResponse{
-		Content:        resp.Content,
-		ToolCalls:      toolCalls,
-		ReasoningSteps: resp.ReasoningSteps,
-		Sources:        sources,
-		TokensUsed:     int(resp.TokensUsed),
-		LatencyMs:      int(resp.LatencyMs),
+		Content:    resp.Content,
+		Sources:    sources,
+		TokensUsed: int(resp.TokensUsed),
+		LatencyMs:  int(resp.LatencyMs),
 	}
 }
 
 // AgentResponse represents the response from the agent
 type AgentResponse struct {
-	Content        string     // Clean response text
-	ToolCalls      []ToolCall // Tool calls metadata (currently empty)
-	ReasoningSteps []string   // Reasoning steps (currently empty)
-	Sources        []Source   // RAG sources (currently empty)
-	TokensUsed     int        // Tokens used (currently 0)
-	LatencyMs      int        // Latency in milliseconds (currently 0)
+	Content    string            // Clean response text
+	Sources    []ReasoningSource // Reasoning-based RAG sources (doc_id + node_ids)
+	TokensUsed int               // Tokens used (currently 0)
+	LatencyMs  int               // Latency in milliseconds (currently 0)
 }
 
-// ToolCall represents a tool call metadata
-type ToolCall struct {
-	ToolName string
-	ArgsJSON string
-	Output   string
-}
-
-// Source represents a RAG source
-type Source struct {
-	Title   string
-	Content string
-	Score   float32
-	URL     string
+// ReasoningSource represents a reasoning-based RAG source (IDs only)
+type ReasoningSource struct {
+	DocID   string   // Document ID (e.g., "159-qd-dhcntt_05-03-2024...")
+	NodeIDs []string // Node IDs used from this document (e.g., ["0001", "0002"])
 }

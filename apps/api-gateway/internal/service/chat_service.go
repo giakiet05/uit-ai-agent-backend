@@ -22,9 +22,10 @@ type ChatService interface {
 }
 
 type chatService struct {
-	sessionRepo repo.ChatSessionRepo
-	messageRepo repo.ChatMessageRepo
-	agentClient *platformgrpc.AgentClient
+	sessionRepo    repo.ChatSessionRepo
+	messageRepo    repo.ChatMessageRepo
+	agentClient    *platformgrpc.AgentClient
+	sourceEnricher SourceEnricher
 }
 
 // NewChatService creates a new chat service
@@ -32,11 +33,13 @@ func NewChatService(
 	sessionRepo repo.ChatSessionRepo,
 	messageRepo repo.ChatMessageRepo,
 	agentClient *platformgrpc.AgentClient,
+	sourceEnricher SourceEnricher,
 ) ChatService {
 	return &chatService{
-		sessionRepo: sessionRepo,
-		messageRepo: messageRepo,
-		agentClient: agentClient,
+		sessionRepo:    sessionRepo,
+		messageRepo:    messageRepo,
+		agentClient:    agentClient,
+		sourceEnricher: sourceEnricher,
 	}
 }
 
@@ -135,36 +138,25 @@ func (s *chatService) Chat(ctx context.Context, userID string, sessionID *string
 func (s *chatService) buildMetadata(resp *platformgrpc.AgentResponse, latency time.Duration) map[string]any {
 	metadata := make(map[string]any)
 
-	// Tool calls
-	if len(resp.ToolCalls) > 0 {
-		toolCalls := make([]map[string]string, len(resp.ToolCalls))
-		for i, tc := range resp.ToolCalls {
-			toolCalls[i] = map[string]string{
-				"tool_name": tc.ToolName,
-				"args_json": tc.ArgsJSON,
-				"output":    tc.Output,
-			}
-		}
-		metadata["tool_calls"] = toolCalls
-	}
-
-	// Sources
+	// Enrich and save sources
 	if len(resp.Sources) > 0 {
-		sources := make([]map[string]any, len(resp.Sources))
-		for i, src := range resp.Sources {
-			sources[i] = map[string]any{
-				"title":   src.Title,
-				"content": src.Content,
-				"score":   src.Score,
-				"url":     src.URL,
+		enrichedSources, err := s.sourceEnricher.EnrichSources(resp.Sources)
+		if err != nil {
+			// Log error but don't fail - save raw sources as fallback
+			fmt.Printf("failed to enrich sources: %v\n", err)
+			// Save raw sources (IDs only)
+			rawSources := make([]map[string]any, len(resp.Sources))
+			for i, src := range resp.Sources {
+				rawSources[i] = map[string]any{
+					"doc_id":   src.DocID,
+					"node_ids": src.NodeIDs,
+				}
 			}
+			metadata["sources"] = rawSources
+		} else {
+			// Save enriched sources
+			metadata["sources"] = enrichedSources
 		}
-		metadata["sources"] = sources
-	}
-
-	// Reasoning steps
-	if len(resp.ReasoningSteps) > 0 {
-		metadata["reasoning_steps"] = resp.ReasoningSteps
 	}
 
 	// Stats
@@ -235,7 +227,78 @@ func (s *chatService) GetMessagesBySessionID(ctx context.Context, userID string,
 		return nil, fmt.Errorf("failed to get messages: %w", err)
 	}
 
+	// Enrich metadata for all messages (in case old messages have raw sources)
+	for _, msg := range messages {
+		if msg.Metadata != nil {
+			s.enrichMessageMetadata(msg.Metadata)
+		}
+	}
+
 	return messages, nil
+}
+
+// enrichMessageMetadata enriches raw sources in message metadata (in-place)
+func (s *chatService) enrichMessageMetadata(metadata map[string]any) {
+	// Check if sources exist and are in raw format (array of maps with doc_id, node_ids)
+	sourcesRaw, ok := metadata["sources"]
+	if !ok || sourcesRaw == nil {
+		return
+	}
+
+	// Try to detect if sources are already enriched (have pdf_url field)
+	sourcesSlice, ok := sourcesRaw.([]interface{})
+	if !ok || len(sourcesSlice) == 0 {
+		return
+	}
+
+	// Check first source to see if it's already enriched
+	firstSource, ok := sourcesSlice[0].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	// If already enriched (has pdf_url or source_url), skip
+	if _, hasPdfURL := firstSource["pdf_url"]; hasPdfURL {
+		return
+	}
+	if _, hasSourceURL := firstSource["source_url"]; hasSourceURL {
+		return
+	}
+
+	// Convert raw sources to ReasoningSource format
+	rawSources := make([]platformgrpc.ReasoningSource, 0, len(sourcesSlice))
+	for _, srcRaw := range sourcesSlice {
+		srcMap, ok := srcRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		docID, _ := srcMap["doc_id"].(string)
+		nodeIDsRaw, _ := srcMap["node_ids"].([]interface{})
+		
+		nodeIDs := make([]string, 0, len(nodeIDsRaw))
+		for _, nid := range nodeIDsRaw {
+			if nidStr, ok := nid.(string); ok {
+				nodeIDs = append(nodeIDs, nidStr)
+			}
+		}
+
+		rawSources = append(rawSources, platformgrpc.ReasoningSource{
+			DocID:   docID,
+			NodeIDs: nodeIDs,
+		})
+	}
+
+	// Enrich sources
+	enrichedSources, err := s.sourceEnricher.EnrichSources(rawSources)
+	if err != nil {
+		// If enrichment fails, keep raw sources
+		fmt.Printf("failed to enrich sources during message retrieval: %v\n", err)
+		return
+	}
+
+	// Replace raw sources with enriched sources
+	metadata["sources"] = enrichedSources
 }
 
 // DeleteSession soft deletes a session

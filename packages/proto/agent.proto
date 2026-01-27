@@ -4,19 +4,10 @@ package agent;
 
 option go_package = "github.com/giakiet05/uit-ai-assistant/backend/internal/grpc/pb";
 
-// Tool call metadata
-message ToolCall {
-  string tool_name = 1;
-  string args_json = 2;   // JSON string của args
-  string output = 3;
-}
-
-// RAG source metadata
-message Source {
-  string title = 1;
-  string content = 2;
-  float score = 3;
-  string url = 4;
+// Reasoning-based RAG source metadata
+message ReasoningSource {
+  string doc_id = 1;          // Document ID (e.g., "159-qd-dhcntt_05-03-2024...")
+  repeated string node_ids = 2;  // Node IDs used from this document (e.g., ["1", "1.1", "2.3"])
 }
 
 // Request gọi agent (stateful architecture)
@@ -29,11 +20,9 @@ message ChatRequest {
 // Response từ agent
 message ChatResponse {
   string content = 1;                      // Câu trả lời đã clean
-  repeated ToolCall tool_calls = 2;        // Tool calls (tạm thời empty)
-  repeated string reasoning_steps = 3;     // Reasoning steps (tạm thời empty)
-  repeated Source sources = 4;             // RAG sources (tạm thời empty)
-  int32 tokens_used = 5;                   // Tokens used (tạm thời 0)
-  int32 latency_ms = 6;                    // Latency (tạm thời 0)
+  repeated ReasoningSource sources = 2;    // Reasoning-based RAG sources (doc_id + node_ids)
+  int32 tokens_used = 3;                   // Tokens used (tạm thời 0)
+  int32 latency_ms = 4;                    // Latency (tạm thời 0)
 }
 
 // gRPC service

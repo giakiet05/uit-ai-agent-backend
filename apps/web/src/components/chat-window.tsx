@@ -6,12 +6,15 @@ import { useState, useRef, useEffect } from "react"
 import { Send } from "lucide-react"
 import ChatHeader from "./chat-header"
 import TypingIndicator from "./typing-indicator"
+import SourceReferences from "./source-references"
+import type { ChatMessageMetadata } from "@/lib/api"
 
 interface Message {
   id: string
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  metadata?: ChatMessageMetadata
 }
 
 interface ChatWindowProps {
@@ -107,7 +110,7 @@ export default function ChatWindow({ messages, conversationTitle, onSendMessage,
                 className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-300`}
               >
                 {message.role === "assistant" && (
-                  <div className="flex gap-3 max-w-3xl">
+                  <div className="flex gap-3 max-w-3xl w-full">
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
@@ -118,10 +121,19 @@ export default function ChatWindow({ messages, conversationTitle, onSendMessage,
                         />
                       </svg>
                     </div>
-                    <div className="text-foreground leading-relaxed space-y-2">
+                    <div className="text-foreground leading-relaxed space-y-2 flex-1 min-w-0">
                       <div className="text-base whitespace-pre-wrap">{message.content}</div>
+                      
+                      {/* Source References */}
+                      {message.metadata?.sources && message.metadata.sources.length > 0 && (
+                        <SourceReferences sources={message.metadata.sources} />
+                      )}
+                      
                       <p className="text-xs text-muted-foreground">
                         {message.timestamp.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                        {message.metadata?.tokens_used && (
+                          <span className="ml-2">• {message.metadata.tokens_used} tokens</span>
+                        )}
                       </p>
                     </div>
                   </div>

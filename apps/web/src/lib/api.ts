@@ -107,11 +107,35 @@ export interface ChatRequest {
   session_id?: string // Optional, creates new session if not provided
 }
 
+// Source Types (Reasoning-based RAG)
+export interface NodeInfo {
+  node_id: string
+  title: string
+  text: string
+}
+
+export interface SourceInfo {
+  doc_id: string
+  doc_title: string
+  doc_type: "regulation" | "curriculum"
+  year: number
+  source_url?: string | null // URL for curriculum
+  pdf_url?: string | null    // PDF download URL for regulation
+  nodes: NodeInfo[]
+}
+
+export interface ChatMessageMetadata {
+  sources?: SourceInfo[]
+  tokens_used?: number
+  latency_ms?: number
+  agent_latency_ms?: number
+}
+
 export interface ChatMessageResponse {
   id: string
   role: "user" | "assistant"
   content: string
-  metadata?: Record<string, any> // RAG sources, tool calls, tokens, etc.
+  metadata?: ChatMessageMetadata
   created_at: string
 }
 

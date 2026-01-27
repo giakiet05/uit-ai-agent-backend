@@ -21,30 +21,29 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Tool call metadata
-type ToolCall struct {
+// Reasoning-based RAG source metadata
+type ReasoningSource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ToolName      string                 `protobuf:"bytes,1,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
-	ArgsJson      string                 `protobuf:"bytes,2,opt,name=args_json,json=argsJson,proto3" json:"args_json,omitempty"` // JSON string của args
-	Output        string                 `protobuf:"bytes,3,opt,name=output,proto3" json:"output,omitempty"`
+	DocId         string                 `protobuf:"bytes,1,opt,name=doc_id,json=docId,proto3" json:"doc_id,omitempty"`       // Document ID (e.g., "159-qd-dhcntt_05-03-2024...")
+	NodeIds       []string               `protobuf:"bytes,2,rep,name=node_ids,json=nodeIds,proto3" json:"node_ids,omitempty"` // Node IDs used from this document (e.g., ["1", "1.1", "2.3"])
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ToolCall) Reset() {
-	*x = ToolCall{}
+func (x *ReasoningSource) Reset() {
+	*x = ReasoningSource{}
 	mi := &file_agent_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ToolCall) String() string {
+func (x *ReasoningSource) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ToolCall) ProtoMessage() {}
+func (*ReasoningSource) ProtoMessage() {}
 
-func (x *ToolCall) ProtoReflect() protoreflect.Message {
+func (x *ReasoningSource) ProtoReflect() protoreflect.Message {
 	mi := &file_agent_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,99 +55,23 @@ func (x *ToolCall) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ToolCall.ProtoReflect.Descriptor instead.
-func (*ToolCall) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReasoningSource.ProtoReflect.Descriptor instead.
+func (*ReasoningSource) Descriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ToolCall) GetToolName() string {
+func (x *ReasoningSource) GetDocId() string {
 	if x != nil {
-		return x.ToolName
+		return x.DocId
 	}
 	return ""
 }
 
-func (x *ToolCall) GetArgsJson() string {
+func (x *ReasoningSource) GetNodeIds() []string {
 	if x != nil {
-		return x.ArgsJson
+		return x.NodeIds
 	}
-	return ""
-}
-
-func (x *ToolCall) GetOutput() string {
-	if x != nil {
-		return x.Output
-	}
-	return ""
-}
-
-// RAG source metadata
-type Source struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	Score         float32                `protobuf:"fixed32,3,opt,name=score,proto3" json:"score,omitempty"`
-	Url           string                 `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Source) Reset() {
-	*x = Source{}
-	mi := &file_agent_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Source) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Source) ProtoMessage() {}
-
-func (x *Source) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Source.ProtoReflect.Descriptor instead.
-func (*Source) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *Source) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *Source) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *Source) GetScore() float32 {
-	if x != nil {
-		return x.Score
-	}
-	return 0
-}
-
-func (x *Source) GetUrl() string {
-	if x != nil {
-		return x.Url
-	}
-	return ""
+	return nil
 }
 
 // Request gọi agent (stateful architecture)
@@ -163,7 +86,7 @@ type ChatRequest struct {
 
 func (x *ChatRequest) Reset() {
 	*x = ChatRequest{}
-	mi := &file_agent_proto_msgTypes[2]
+	mi := &file_agent_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +98,7 @@ func (x *ChatRequest) String() string {
 func (*ChatRequest) ProtoMessage() {}
 
 func (x *ChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[2]
+	mi := &file_agent_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +111,7 @@ func (x *ChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatRequest.ProtoReflect.Descriptor instead.
 func (*ChatRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{2}
+	return file_agent_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ChatRequest) GetMessage() string {
@@ -214,20 +137,18 @@ func (x *ChatRequest) GetThreadId() string {
 
 // Response từ agent
 type ChatResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Content        string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`                                     // Câu trả lời đã clean
-	ToolCalls      []*ToolCall            `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`                // Tool calls (tạm thời empty)
-	ReasoningSteps []string               `protobuf:"bytes,3,rep,name=reasoning_steps,json=reasoningSteps,proto3" json:"reasoning_steps,omitempty"` // Reasoning steps (tạm thời empty)
-	Sources        []*Source              `protobuf:"bytes,4,rep,name=sources,proto3" json:"sources,omitempty"`                                     // RAG sources (tạm thời empty)
-	TokensUsed     int32                  `protobuf:"varint,5,opt,name=tokens_used,json=tokensUsed,proto3" json:"tokens_used,omitempty"`            // Tokens used (tạm thời 0)
-	LatencyMs      int32                  `protobuf:"varint,6,opt,name=latency_ms,json=latencyMs,proto3" json:"latency_ms,omitempty"`               // Latency (tạm thời 0)
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`                          // Câu trả lời đã clean
+	Sources       []*ReasoningSource     `protobuf:"bytes,2,rep,name=sources,proto3" json:"sources,omitempty"`                          // Reasoning-based RAG sources (doc_id + node_ids)
+	TokensUsed    int32                  `protobuf:"varint,3,opt,name=tokens_used,json=tokensUsed,proto3" json:"tokens_used,omitempty"` // Tokens used (tạm thời 0)
+	LatencyMs     int32                  `protobuf:"varint,4,opt,name=latency_ms,json=latencyMs,proto3" json:"latency_ms,omitempty"`    // Latency (tạm thời 0)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChatResponse) Reset() {
 	*x = ChatResponse{}
-	mi := &file_agent_proto_msgTypes[3]
+	mi := &file_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -239,7 +160,7 @@ func (x *ChatResponse) String() string {
 func (*ChatResponse) ProtoMessage() {}
 
 func (x *ChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[3]
+	mi := &file_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -252,7 +173,7 @@ func (x *ChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatResponse.ProtoReflect.Descriptor instead.
 func (*ChatResponse) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{3}
+	return file_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ChatResponse) GetContent() string {
@@ -262,21 +183,7 @@ func (x *ChatResponse) GetContent() string {
 	return ""
 }
 
-func (x *ChatResponse) GetToolCalls() []*ToolCall {
-	if x != nil {
-		return x.ToolCalls
-	}
-	return nil
-}
-
-func (x *ChatResponse) GetReasoningSteps() []string {
-	if x != nil {
-		return x.ReasoningSteps
-	}
-	return nil
-}
-
-func (x *ChatResponse) GetSources() []*Source {
+func (x *ChatResponse) GetSources() []*ReasoningSource {
 	if x != nil {
 		return x.Sources
 	}
@@ -301,30 +208,21 @@ var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
 	"\n" +
-	"\vagent.proto\x12\x05agent\"\\\n" +
-	"\bToolCall\x12\x1b\n" +
-	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12\x1b\n" +
-	"\targs_json\x18\x02 \x01(\tR\bargsJson\x12\x16\n" +
-	"\x06output\x18\x03 \x01(\tR\x06output\"`\n" +
-	"\x06Source\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\x12\x14\n" +
-	"\x05score\x18\x03 \x01(\x02R\x05score\x12\x10\n" +
-	"\x03url\x18\x04 \x01(\tR\x03url\"]\n" +
+	"\vagent.proto\x12\x05agent\"C\n" +
+	"\x0fReasoningSource\x12\x15\n" +
+	"\x06doc_id\x18\x01 \x01(\tR\x05docId\x12\x19\n" +
+	"\bnode_ids\x18\x02 \x03(\tR\anodeIds\"]\n" +
 	"\vChatRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
-	"\tthread_id\x18\x03 \x01(\tR\bthreadId\"\xea\x01\n" +
+	"\tthread_id\x18\x03 \x01(\tR\bthreadId\"\x9a\x01\n" +
 	"\fChatResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\tR\acontent\x12.\n" +
-	"\n" +
-	"tool_calls\x18\x02 \x03(\v2\x0f.agent.ToolCallR\ttoolCalls\x12'\n" +
-	"\x0freasoning_steps\x18\x03 \x03(\tR\x0ereasoningSteps\x12'\n" +
-	"\asources\x18\x04 \x03(\v2\r.agent.SourceR\asources\x12\x1f\n" +
-	"\vtokens_used\x18\x05 \x01(\x05R\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x120\n" +
+	"\asources\x18\x02 \x03(\v2\x16.agent.ReasoningSourceR\asources\x12\x1f\n" +
+	"\vtokens_used\x18\x03 \x01(\x05R\n" +
 	"tokensUsed\x12\x1d\n" +
 	"\n" +
-	"latency_ms\x18\x06 \x01(\x05R\tlatencyMs28\n" +
+	"latency_ms\x18\x04 \x01(\x05R\tlatencyMs28\n" +
 	"\x05Agent\x12/\n" +
 	"\x04Chat\x12\x12.agent.ChatRequest\x1a\x13.agent.ChatResponseB@Z>github.com/giakiet05/uit-ai-assistant/backend/internal/grpc/pbb\x06proto3"
 
@@ -340,23 +238,21 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_agent_proto_goTypes = []any{
-	(*ToolCall)(nil),     // 0: agent.ToolCall
-	(*Source)(nil),       // 1: agent.Source
-	(*ChatRequest)(nil),  // 2: agent.ChatRequest
-	(*ChatResponse)(nil), // 3: agent.ChatResponse
+	(*ReasoningSource)(nil), // 0: agent.ReasoningSource
+	(*ChatRequest)(nil),     // 1: agent.ChatRequest
+	(*ChatResponse)(nil),    // 2: agent.ChatResponse
 }
 var file_agent_proto_depIdxs = []int32{
-	0, // 0: agent.ChatResponse.tool_calls:type_name -> agent.ToolCall
-	1, // 1: agent.ChatResponse.sources:type_name -> agent.Source
-	2, // 2: agent.Agent.Chat:input_type -> agent.ChatRequest
-	3, // 3: agent.Agent.Chat:output_type -> agent.ChatResponse
-	3, // [3:4] is the sub-list for method output_type
-	2, // [2:3] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0, // 0: agent.ChatResponse.sources:type_name -> agent.ReasoningSource
+	1, // 1: agent.Agent.Chat:input_type -> agent.ChatRequest
+	2, // 2: agent.Agent.Chat:output_type -> agent.ChatResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -370,7 +266,7 @@ func file_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

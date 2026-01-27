@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x61gent.proto\x12\x05\x61gent\"@\n\x08ToolCall\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12\x11\n\targs_json\x18\x02 \x01(\t\x12\x0e\n\x06output\x18\x03 \x01(\t\"D\n\x06Source\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x0b\n\x03url\x18\x04 \x01(\t\"B\n\x0b\x43hatRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12\x11\n\tthread_id\x18\x03 \x01(\t\"\xa6\x01\n\x0c\x43hatResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12#\n\ntool_calls\x18\x02 \x03(\x0b\x32\x0f.agent.ToolCall\x12\x17\n\x0freasoning_steps\x18\x03 \x03(\t\x12\x1e\n\x07sources\x18\x04 \x03(\x0b\x32\r.agent.Source\x12\x13\n\x0btokens_used\x18\x05 \x01(\x05\x12\x12\n\nlatency_ms\x18\x06 \x01(\x05\x32\x38\n\x05\x41gent\x12/\n\x04\x43hat\x12\x12.agent.ChatRequest\x1a\x13.agent.ChatResponseB@Z>github.com/giakiet05/uit-ai-assistant/backend/internal/grpc/pbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x61gent.proto\x12\x05\x61gent\"3\n\x0fReasoningSource\x12\x0e\n\x06\x64oc_id\x18\x01 \x01(\t\x12\x10\n\x08node_ids\x18\x02 \x03(\t\"B\n\x0b\x43hatRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\t\x12\x11\n\tthread_id\x18\x03 \x01(\t\"q\n\x0c\x43hatResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\'\n\x07sources\x18\x02 \x03(\x0b\x32\x16.agent.ReasoningSource\x12\x13\n\x0btokens_used\x18\x03 \x01(\x05\x12\x12\n\nlatency_ms\x18\x04 \x01(\x05\x32\x38\n\x05\x41gent\x12/\n\x04\x43hat\x12\x12.agent.ChatRequest\x1a\x13.agent.ChatResponseB@Z>github.com/giakiet05/uit-ai-assistant/backend/internal/grpc/pbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,14 +32,12 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'agent_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z>github.com/giakiet05/uit-ai-assistant/backend/internal/grpc/pb'
-  _globals['_TOOLCALL']._serialized_start=22
-  _globals['_TOOLCALL']._serialized_end=86
-  _globals['_SOURCE']._serialized_start=88
-  _globals['_SOURCE']._serialized_end=156
-  _globals['_CHATREQUEST']._serialized_start=158
-  _globals['_CHATREQUEST']._serialized_end=224
-  _globals['_CHATRESPONSE']._serialized_start=227
-  _globals['_CHATRESPONSE']._serialized_end=393
-  _globals['_AGENT']._serialized_start=395
-  _globals['_AGENT']._serialized_end=451
+  _globals['_REASONINGSOURCE']._serialized_start=22
+  _globals['_REASONINGSOURCE']._serialized_end=73
+  _globals['_CHATREQUEST']._serialized_start=75
+  _globals['_CHATREQUEST']._serialized_end=141
+  _globals['_CHATRESPONSE']._serialized_start=143
+  _globals['_CHATRESPONSE']._serialized_end=256
+  _globals['_AGENT']._serialized_start=258
+  _globals['_AGENT']._serialized_end=314
 # @@protoc_insertion_point(module_scope)

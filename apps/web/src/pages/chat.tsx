@@ -99,6 +99,7 @@ export default function ChatPage() {
     role: msg.role,
     content: msg.content,
     timestamp: new Date(msg.created_at),
+    metadata: msg.metadata, // Pass metadata including sources
   }))
 
   // Convert API sessions to component format

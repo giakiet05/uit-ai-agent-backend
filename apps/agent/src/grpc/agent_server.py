@@ -12,6 +12,9 @@ This server:
 import asyncio
 from concurrent import futures
 import grpc
+import json
+
+from langchain_core.messages import ToolMessage
 
 from src.config.llm_provider import create_llm
 from src.config.settings import settings
@@ -102,19 +105,92 @@ class AgentServicer(agent_pb2_grpc.AgentServicer):
         agent_message = result["messages"][-1]
         content = agent_message.content
 
+        # Extract sources from tool outputs
+        logger.info(f"[EXTRACT] Total messages: {len(result['messages'])}")
+        for i, msg in enumerate(result["messages"]):
+            msg_type = type(msg).__name__
+            if msg_type == "ToolMessage":
+                logger.info(f"[EXTRACT]   [{i}] {msg_type} - content preview: {msg.content[:200]}")
+            else:
+                logger.info(f"[EXTRACT]   [{i}] {msg_type}")
+        sources = self._extract_sources_from_messages(result["messages"])
+
         logger.info(f"\n[AGENT SERVER] Response sent:")
         logger.info(f"  - Content length: {len(content)} chars")
         logger.info(f"  - Preview: {content[:200]}...")
+        logger.info(f"  - Sources: {len(sources)} documents")
 
         # Build ChatResponse
         return agent_pb2.ChatResponse(
             content=content,
-            tool_calls=[],  # TODO: Extract tool calls from messages if needed
-            reasoning_steps=[],
-            sources=[],
+            sources=sources,
             tokens_used=0,  # TODO: Add token counting
             latency_ms=0
         )
+
+    def _extract_sources_from_messages(self, messages):
+        """
+        Extract reasoning sources from tool outputs.
+        
+        Searches for ToolMessage containing search_documents output,
+        then extracts doc_id + node_ids for each source.
+        
+        Args:
+            messages: List of LangChain messages from agent execution
+            
+        Returns:
+            List of ReasoningSource protobuf messages
+        """
+        sources = []
+        
+        # Search from end (most recent tool calls first)
+        for msg in reversed(messages):
+            if isinstance(msg, ToolMessage):
+                try:
+                    logger.info(f"[EXTRACT] Found ToolMessage, content type: {type(msg.content)}")
+                    
+                    # Handle both string and list formats
+                    content_str = msg.content
+                    if isinstance(msg.content, list) and len(msg.content) > 0:
+                        # MCP tools return [{'type': 'text', 'text': '...'}]
+                        if isinstance(msg.content[0], dict) and 'text' in msg.content[0]:
+                            content_str = msg.content[0]['text']
+                            logger.info(f"[EXTRACT] Extracted text from content array")
+                    
+                    tool_output = json.loads(content_str)
+                    logger.info(f"[EXTRACT] Parsed JSON keys: {list(tool_output.keys())}")
+                    
+                    # Check if it's search_documents output
+                    if "selected_docs" in tool_output and "selected_nodes" in tool_output:
+                        selected_docs = tool_output.get("selected_docs", [])
+                        selected_nodes = tool_output.get("selected_nodes", {})
+                        
+                        logger.info(f"[EXTRACT] Found search_documents output: {len(selected_docs)} docs")
+                        
+                        for doc_id in selected_docs:
+                            node_ids = selected_nodes.get(doc_id, [])
+                            logger.info(f"[EXTRACT] Adding source: {doc_id} with {len(node_ids)} nodes")
+                            sources.append(
+                                agent_pb2.ReasoningSource(
+                                    doc_id=doc_id,
+                                    node_ids=node_ids
+                                )
+                            )
+                        
+                        # Only extract from latest search_documents call
+                        break
+                    else:
+                        logger.info(f"[EXTRACT] Not search_documents output (missing keys)")
+                        
+                except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                    # Skip malformed tool outputs
+                    logger.info(f"[EXTRACT] Failed to parse ToolMessage: {e}")
+                    continue
+        
+        if not sources:
+            logger.warning("[EXTRACT] No sources found in messages!")
+        
+        return sources
 
 
 async def _initialize_agent():
